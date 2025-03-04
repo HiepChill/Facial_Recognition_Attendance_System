@@ -1,5 +1,8 @@
 import cv2
 import os
+import numpy 
+import cv2
+import os
 import numpy as np
 import insightface
 import sqlite3
@@ -7,7 +10,7 @@ import time
 import csv
 import uuid
 from datetime import datetime, timedelta
-from fastapi import FastAPI, UploadFile, File, Form, Response, Request
+from fastapi import FastAPI, UploadFile, File, Form, Response, Request, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional, Dict
@@ -49,7 +52,7 @@ face_database = {}
 
 # Models Pydantic
 class User(BaseModel):
-    id: Optional[str] = None
+    id: str  # Changed from Optional[str] to str as it's now required
     name: str
 
 class AttendanceRecord(BaseModel):
@@ -175,6 +178,7 @@ face_database = load_face_database()
 # API endpoints
 @app.post("/register_face")
 async def register_face(
+    user_id: str = Form(...),  # Changed to required parameter
     name: str = Form(...),
     face_images: List[UploadFile] = File(...)
 ):
@@ -182,14 +186,20 @@ async def register_face(
     if not face_images:
         return JSONResponse(status_code=400, content={"error": "No images uploaded"})
     
-    # Tạo ID duy nhất cho người dùng
-    user_id = str(uuid.uuid4())
-    
-    # Kết nối cơ sở dữ liệu
+    # Connect to database to check for existing user_id
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
     try:
+        # Check if user_id already exists
+        cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
+        if cursor.fetchone():
+            conn.close()
+            return JSONResponse(
+                status_code=400, 
+                content={"error": f"User ID '{user_id}' already exists. Please use a different ID."}
+            )
+        
         # Thêm người dùng mới
         cursor.execute(
             "INSERT INTO users (id, name) VALUES (?, ?)",
