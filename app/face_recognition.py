@@ -10,8 +10,8 @@ from datetime import datetime
 
 # Danh sách provider theo thứ tự ưu tiên
 PROVIDER_LIST = [
-    'CUDAExecutionProvider',  # Ưu tiên GPU NVIDIA nếu có
     'DmlExecutionProvider',   # DirectML cho Windows
+    'CUDAExecutionProvider',  # Ưu tiên GPU NVIDIA nếu có
     'CPUExecutionProvider'    # Fallback cuối cùng cho CPU
 ]
 
