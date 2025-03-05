@@ -271,61 +271,7 @@ async def register_face(
         return JSONResponse(status_code=500, content={"error": f"Registration failed: {str(e)}"})
     finally:
         conn.close()
-
-@app.get("/users")
-async def get_users():
-    """Lấy danh sách tất cả người dùng"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT id, name FROM users")
-    users = [{"id": row[0], "name": row[1]} for row in cursor.fetchall()]
-    
-    conn.close()
-    return {"users": users}
-
-@app.get("/user/{user_id}/faces")
-async def get_user_faces(user_id: str):
-    """Lấy danh sách ảnh khuôn mặt của người dùng"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT image_path FROM face_images WHERE user_id = ?", (user_id,))
-    face_images = [row[0] for row in cursor.fetchall()]
-    
-    conn.close()
-    return {"user_id": user_id, "face_images": face_images}
-
-@app.get("/attendance/{date}")
-async def get_attendance(date: str):
-    """Lấy dữ liệu điểm danh theo ngày (định dạng: YYYY-MM-DD)"""
-    csv_path = os.path.join(ATTENDANCE_DIR, f"attendance_{date}.csv")
-    
-    if not os.path.exists(csv_path):
-        return {"date": date, "records": []}
-    
-    records = []
-    with open(csv_path, 'r') as file:
-        reader = csv.reader(file)
-        headers = next(reader)  # Bỏ qua header
         
-        for row in reader:
-            if len(row) >= 4:
-                records.append({
-                    "name": row[0],
-                    "user_id": row[1],
-                    "time": row[2],
-                    "event": row[3]
-                })
-    
-    return {"date": date, "records": records}
-
-@app.get("/today_attendance")
-async def get_today_attendance():
-    """Lấy dữ liệu điểm danh của ngày hôm nay"""
-    today = datetime.now().strftime("%Y-%m-%d")
-    return await get_attendance(today)
-
 # Xử lý frame để nhận diện khuôn mặt
 # Xử lý frame để nhận diện khuôn mặt
 def process_frame(frame):
@@ -429,6 +375,60 @@ def generate_frames():
     
     finally:
         cap.release()
+
+@app.get("/users")
+async def get_users():
+    """Lấy danh sách tất cả người dùng"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT id, name FROM users")
+    users = [{"id": row[0], "name": row[1]} for row in cursor.fetchall()]
+    
+    conn.close()
+    return {"users": users}
+
+@app.get("/user/{user_id}/faces")
+async def get_user_faces(user_id: str):
+    """Lấy danh sách ảnh khuôn mặt của người dùng"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT image_path FROM face_images WHERE user_id = ?", (user_id,))
+    face_images = [row[0] for row in cursor.fetchall()]
+    
+    conn.close()
+    return {"user_id": user_id, "face_images": face_images}
+
+@app.get("/attendance/{date}")
+async def get_attendance(date: str):
+    """Lấy dữ liệu điểm danh theo ngày (định dạng: YYYY-MM-DD)"""
+    csv_path = os.path.join(ATTENDANCE_DIR, f"attendance_{date}.csv")
+    
+    if not os.path.exists(csv_path):
+        return {"date": date, "records": []}
+    
+    records = []
+    with open(csv_path, 'r') as file:
+        reader = csv.reader(file)
+        headers = next(reader)  # Bỏ qua header
+        
+        for row in reader:
+            if len(row) >= 4:
+                records.append({
+                    "name": row[0],
+                    "user_id": row[1],
+                    "time": row[2],
+                    "event": row[3]
+                })
+    
+    return {"date": date, "records": records}
+
+@app.get("/today_attendance")
+async def get_today_attendance():
+    """Lấy dữ liệu điểm danh của ngày hôm nay"""
+    today = datetime.now().strftime("%Y-%m-%d")
+    return await get_attendance(today)
 
 # Stream video với nhận diện khuôn mặt
 @app.get("/video_feed")

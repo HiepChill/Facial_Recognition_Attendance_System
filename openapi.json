@@ -1,0 +1,205 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Face Recognition Attendance System",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/register_face": {
+            "post": {
+                "summary": "Register Face",
+                "description": "Đăng ký khuôn mặt và tạo người dùng mới với nhiều ảnh",
+                "operationId": "register_face_register_face_post",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_register_face_register_face_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": { "application/json": { "schema": {} } }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "summary": "Get Users",
+                "description": "Lấy danh sách tất cả người dùng",
+                "operationId": "get_users_users_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": { "application/json": { "schema": {} } }
+                    }
+                }
+            }
+        },
+        "/user/{user_id}/faces": {
+            "get": {
+                "summary": "Get User Faces",
+                "description": "Lấy danh sách ảnh khuôn mặt của người dùng",
+                "operationId": "get_user_faces_user__user_id__faces_get",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "User Id" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": { "application/json": { "schema": {} } }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/attendance/{date}": {
+            "get": {
+                "summary": "Get Attendance",
+                "description": "Lấy dữ liệu điểm danh theo ngày (định dạng: YYYY-MM-DD)",
+                "operationId": "get_attendance_attendance__date__get",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Date" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": { "application/json": { "schema": {} } }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/today_attendance": {
+            "get": {
+                "summary": "Get Today Attendance",
+                "description": "Lấy dữ liệu điểm danh của ngày hôm nay",
+                "operationId": "get_today_attendance_today_attendance_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": { "application/json": { "schema": {} } }
+                    }
+                }
+            }
+        },
+        "/video_feed": {
+            "get": {
+                "summary": "Video Feed",
+                "description": "Stream video với nhận diện khuôn mặt",
+                "operationId": "video_feed_video_feed_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": { "application/json": { "schema": {} } }
+                    }
+                }
+            }
+        },
+        "/": {
+            "get": {
+                "summary": "Root",
+                "operationId": "root__get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": { "application/json": { "schema": {} } }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Body_register_face_register_face_post": {
+                "properties": {
+                    "user_id": { "type": "string", "title": "User Id" },
+                    "name": { "type": "string", "title": "Name" },
+                    "face_images": {
+                        "items": { "type": "string", "format": "binary" },
+                        "type": "array",
+                        "title": "Face Images"
+                    }
+                },
+                "type": "object",
+                "required": ["user_id", "name", "face_images"],
+                "title": "Body_register_face_register_face_post"
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                { "type": "string" },
+                                { "type": "integer" }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": { "type": "string", "title": "Message" },
+                    "type": { "type": "string", "title": "Error Type" }
+                },
+                "type": "object",
+                "required": ["loc", "msg", "type"],
+                "title": "ValidationError"
+            }
+        }
+    }
+}
