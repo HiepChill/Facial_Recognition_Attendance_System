@@ -1,6 +1,7 @@
 import sqlite3
 import os
 from .config import DB_PATH
+from datetime import datetime
 
 def setup_database():
     """Thiết lập cơ sở dữ liệu"""
@@ -23,6 +24,16 @@ def setup_database():
         user_id TEXT NOT NULL,
         image_path TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id)
+    )
+    ''')
+    
+    # Thêm bảng để lưu trạng thái điểm danh gần nhất
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS attendance_status (
+        user_id TEXT PRIMARY KEY,
+        last_event TEXT NOT NULL,
+        last_time TIMESTAMP NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users (id)
     )
     ''')
@@ -91,3 +102,23 @@ def get_user_face_data():
     results = cursor.fetchall()
     conn.close()
     return results
+
+def get_last_attendance_status(user_id):
+    """Lấy trạng thái điểm danh gần nhất của người dùng"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT last_event, last_time FROM attendance_status WHERE user_id = ?", (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    return result  # Trả về (last_event, last_time) hoặc None nếu chưa có
+
+def update_attendance_status(user_id, event, timestamp):
+    """Cập nhật trạng thái điểm danh gần nhất"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT OR REPLACE INTO attendance_status (user_id, last_event, last_time)
+    VALUES (?, ?, ?)
+    """, (user_id, event, timestamp))
+    conn.commit()
+    conn.close()

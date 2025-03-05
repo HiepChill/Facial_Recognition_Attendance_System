@@ -160,7 +160,7 @@ def generate_frames():
                 break
             
             # Xử lý frame cho nhận diện
-            processed_frame, _ = process_frame(frame, face_database)
+            processed_frame, recognized_users = process_frame(frame, face_database)
             
             # Chuyển đổi frame thành JPEG
             _, buffer = cv2.imencode('.jpg', processed_frame)
