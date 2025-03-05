@@ -197,7 +197,7 @@ async def register_face(
             conn.close()
             return JSONResponse(
                 status_code=400, 
-                content={"error": f"User ID '{user_id}' already exists. Please use a different ID."}
+                content={"error": f"ID người dùng '{user_id}' đã tồn tại. Vui lòng chọn ID khác."}
             )
         
         # Thêm người dùng mới
