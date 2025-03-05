@@ -6,17 +6,16 @@ from sklearn.metrics.pairwise import cosine_similarity
 import os
 from datetime import datetime, timedelta
 
+from database import get_last_attendance_status, update_attendance_status
+
 # Cấu hình
 DATASET_DIR = "dataset"
 DETECTION_THRESHOLD = 0.5  # Ngưỡng nhận diện
-MIN_ATTENDANCE_INTERVAL = timedelta(minutes=10)  # Khoảng cách tối thiểu giữa 2 lần điểm danh
+MIN_ATTENDANCE_INTERVAL = timedelta(minutes=5)  # Khoảng cách tối thiểu giữa 2 lần điểm danh
 
 # Khởi tạo mô hình nhận diện khuôn mặt
 face_analyzer = FaceAnalysis(name='buffalo_l', providers=['DmlExecutionProvider'])
 face_analyzer.prepare(ctx_id=0, det_size=(640, 640))
-
-# Từ điển lưu thời gian điểm danh gần nhất
-last_attendance_time = {}
 
 def load_face_database(user_data):
     """Tạo face database từ dữ liệu người dùng và ảnh"""
@@ -37,7 +36,6 @@ def load_face_database(user_data):
                 
                 face_db[user_key].append(embedding)
     
-    # Tính trung bình embedding cho mỗi người
     averaged_db = {}
     for user_key, embeddings in face_db.items():
         if embeddings:
@@ -52,12 +50,21 @@ def load_face_database(user_data):
 def can_record_attendance(user_id: str):
     """Kiểm tra xem có thể ghi nhận điểm danh không"""
     current_time = datetime.now()
-    if user_id in last_attendance_time:
-        last_time = last_attendance_time[user_id]
+    last_status = get_last_attendance_status(user_id)
+    
+    if last_status:
+        last_event, last_time_str = last_status
+        last_time = datetime.fromisoformat(last_time_str)
         if current_time - last_time < MIN_ATTENDANCE_INTERVAL:
             return False
-    last_attendance_time[user_id] = current_time
     return True
+
+def determine_event_type(user_id: str):
+    """Xác định loại sự kiện (check-in hay check-out)"""
+    last_status = get_last_attendance_status(user_id)
+    if last_status and last_status[0] == "check-in":
+        return "check-out"
+    return "check-in"
 
 def process_frame(frame, face_database):
     """Xử lý frame để nhận diện khuôn mặt"""
@@ -91,10 +98,13 @@ def process_frame(frame, face_database):
                 label = f"{name} ({max_similarity:.2f})"
                 
                 if can_record_attendance(user_id):
+                    event_type = determine_event_type(user_id)
+                    current_time = datetime.now()
+                    update_attendance_status(user_id, event_type, current_time)
                     recognized_users.append({
                         "user_id": user_id,
                         "name": name,
-                        "event": "check-in",
+                        "event": event_type,
                         "confidence": float(max_similarity)
                     })
             else:

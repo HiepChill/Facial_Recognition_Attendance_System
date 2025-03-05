@@ -32,6 +32,16 @@ def setup_database():
     )
     ''')
     
+    # Thêm bảng mới để lưu trạng thái điểm danh gần nhất
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS attendance_status (
+        user_id TEXT PRIMARY KEY,
+        last_event TEXT NOT NULL,
+        last_time TIMESTAMP NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users (id)
+    )
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -83,3 +93,23 @@ def get_user_faces(user_id: str):
     face_images = [row[0] for row in cursor.fetchall()]
     conn.close()
     return face_images
+
+def get_last_attendance_status(user_id: str):
+    """Lấy trạng thái điểm danh gần nhất của người dùng"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT last_event, last_time FROM attendance_status WHERE user_id = ?", (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    return result  # Trả về (last_event, last_time) hoặc None nếu chưa có
+
+def update_attendance_status(user_id: str, event: str, timestamp: datetime):
+    """Cập nhật trạng thái điểm danh gần nhất"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT OR REPLACE INTO attendance_status (user_id, last_event, last_time)
+    VALUES (?, ?, ?)
+    """, (user_id, event, timestamp))
+    conn.commit()
+    conn.close()
