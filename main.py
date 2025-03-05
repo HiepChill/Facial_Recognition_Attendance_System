@@ -52,7 +52,7 @@ face_database = {}
 
 # Models Pydantic
 class User(BaseModel):
-    id: str  # Changed from Optional[str] to str as it's now required
+    id: str 
     name: str
 
 class AttendanceRecord(BaseModel):
