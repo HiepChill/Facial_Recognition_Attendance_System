@@ -212,6 +212,9 @@ async def register_face(
         
         saved_images = []
         
+        # Để đánh số thứ tự cho ảnh
+        sequence_number = 1
+        
         # Xử lý từng ảnh
         for face_image in face_images:
             contents = await face_image.read()
@@ -228,10 +231,12 @@ async def register_face(
                 continue
             
             if len(faces) > 1:
-                continue  # Skip images with multiple faces
+                continue  # Bỏ qua các ảnh có nhiều hơn 1 khuôn mặt
             
-            # Lưu ảnh
-            image_filename = f"{uuid.uuid4()}.jpg"
+            # Tạo tên file theo cấu trúc name_0001.jpg
+            image_filename = f"{name}_{sequence_number:04d}.jpg"
+            sequence_number += 1
+            
             image_path = os.path.join(user_folder, image_filename)
             cv2.imwrite(image_path, img)
             
