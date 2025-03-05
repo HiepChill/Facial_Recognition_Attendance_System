@@ -1,3 +1,5 @@
 Name,User ID,Time,Event
 cuong,IVNSEC_001,15:39:05,check-in
 hiep,IVNSEC_002,16:16:40,check-in
+hiep,IVNSEC_002,16:24:53,check-out
+cuong,IVNSEC_001,16:24:53,check-in
