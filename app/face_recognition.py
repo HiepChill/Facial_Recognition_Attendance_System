@@ -35,6 +35,7 @@ face_analyzer = initialize_face_analyzer()
 # Từ điển lưu embeddings của tất cả người dùng đã đăng ký
 face_database = {}
 
+# Load face database từ SQLite
 def load_face_database(user_face_data):
     """Tải face database từ dữ liệu người dùng"""
     face_db = {}
@@ -72,19 +73,26 @@ def detect_faces(image):
 
 def process_frame(frame, face_database):
     """Xử lý frame để nhận diện khuôn mặt"""
+    # Copy frame để vẽ lên
     display_frame = frame.copy()
     recognized_users = []
     
     try:
+        # Phát hiện khuôn mặt trong frame
         faces = face_analyzer.get(frame)
         
         for face in faces:
+            # Lấy embedding của khuôn mặt
             face_embedding = face.normed_embedding
+
+            # Biến lưu thông tin người được nhận diện và độ tương đồng
             match_info, max_similarity = recognize_face(face_embedding, face_database)
             
+            # Lấy tọa độ khuôn mặt
             bbox = face.bbox.astype(int)
             left, top, right, bottom = bbox[0], bbox[1], bbox[2], bbox[3]
             
+            # Vẽ kết quả nhận diện lên frame
             draw_recognition_result(display_frame, left, top, right, bottom, 
                                   match_info, max_similarity, recognized_users)
     
@@ -93,6 +101,7 @@ def process_frame(frame, face_database):
     
     return display_frame, recognized_users
 
+# So sánh embedding với face database
 def recognize_face(face_embedding, face_database):
     """Nhận diện khuôn mặt dựa trên embedding"""
     match_info = None
@@ -111,14 +120,19 @@ def recognize_face(face_embedding, face_database):
     
     return match_info, max_similarity
 
+# Vẽ kết quả nhận diện lên frame
 def draw_recognition_result(frame, left, top, right, bottom, match_info, similarity, recognized_users):
     """Vẽ kết quả nhận diện lên frame"""
     if match_info:
+        # Vẽ khung xanh nếu nhận diện được
         color = (0, 255, 0)
         name = match_info["name"]
         user_id = match_info["user_id"]
+
+        # Hiển thị tên và độ tương đồng
         label = f"{name} ({similarity:.2f})"
         
+        # Kiểm tra và ghi nhận điểm danh
         if can_record_attendance(user_id):
             event_type = determine_event_type(user_id)
             log_attendance(name, user_id, event_type)
@@ -130,14 +144,19 @@ def draw_recognition_result(frame, left, top, right, bottom, match_info, similar
             })
             update_attendance_status(user_id, event_type, datetime.now())
     else:
+        # Vẽ khung đỏ nếu không nhận diện được
         color = (0, 0, 255)
         label = f"Unknown ({similarity:.2f})"
     
+    # Vẽ bounding box
     cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
-    y_position = max(top - 10, 20)
+    
+    # Hiển thị nhãn
+    y_position = max(top - 10, 20) # Đảm bảo text không bị cắt khỏi frame
     cv2.putText(frame, label, (left, y_position),
                cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
+# Xác định loại sự kiện (check-in hoặc check-out)
 def determine_event_type(user_id):
     """Xác định loại sự kiện (check-in hoặc check-out)"""
     last_status = get_last_attendance_status(user_id)
