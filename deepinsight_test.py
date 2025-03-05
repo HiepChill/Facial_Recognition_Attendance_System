@@ -5,6 +5,9 @@ import insightface
 from insightface.app import FaceAnalysis
 from sklearn.metrics.pairwise import cosine_similarity
 
+
+# from anti_spoofing import AntiSpoofingModel #new
+
 # Thư mục chứa ảnh database
 database_path = "dataset/"
 if not os.path.exists(database_path):
@@ -37,13 +40,14 @@ face_database = load_face_database()
 # Khởi tạo camera
 cap = cv2.VideoCapture(0)
 
+# Khởi tạo mô hình chống giả mạo
+# anti_spoof_model = AntiSpoofingModel("2.7_80x80_MiniFASNetV2.pth") #new
+
 while True:
     ret, frame = cap.read()
     if not ret:
         break
     
-    names = [] #1
-
     try:
         # Nhận diện khuôn mặt trong frame
         faces = app.get(frame)
@@ -68,6 +72,23 @@ while True:
 
             # Hiển thị tên trên ảnh
             cv2.putText(frame, match_name, (left, max(top - 10, 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
+        # for face in faces:
+        #     left, top, right, bottom = map(int, face.bbox)
+        #     face_crop = frame[top:bottom, left:right]  # Cắt khuôn mặt
+
+        #     # Kiểm tra khuôn mặt thật hay giả
+        #     spoof_score = anti_spoof_model.predict(face_crop)
+        #     if spoof_score > 0.5:
+        #         label = "Fake"
+        #         color = (0, 0, 255)  # Đỏ cho giả mạo
+        #     else:
+        #         label = "Real"
+        #         color = (0, 255, 0)  # Xanh cho thật
+
+        #     # Vẽ khung và hiển thị kết quả
+        #     cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
+        #     cv2.putText(frame, label, (left, max(top - 10, 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
     except Exception as e:
         print("Lỗi nhận diện:", e)

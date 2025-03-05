@@ -15,17 +15,33 @@ from pydantic import BaseModel
 from pathlib import Path
 from insightface.app import FaceAnalysis
 from sklearn.metrics.pairwise import cosine_similarity
+from contextlib import asynccontextmanager
+import threading
+
+# Tạo context manager để tải face database khi khởi động ứng dụng
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Tải face database khi khởi động ứng dụng"""
+    global face_database
+    setup_database()
+    face_database = load_face_database()
+    print(f"Đã tải {len(face_database)} người dùng vào CSDL")
+    
+    yield  # Ứng dụng hoạt động
+
+    print("Ứng dụng đang tắt...") 
 
 # Khởi tạo FastAPI app
-app = FastAPI(title="Face Recognition Attendance System")
+app = FastAPI(title="Face Recognition Attendance System", lifespan=lifespan)
 
-# Thêm CORS middleware
+# Thêm CORS middleware: giúp kiểm soát quyền truy cập tài nguyên giữa các trang web có nguồn gốc khác nhau
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"], # Cho phép tất cả các nguồn (domain) truy cập API
+        # allow_origins=["https://my-frontend.com", "https://admin.my-frontend.com"] # Chỉ cho phép các domain này truy cập API
+    allow_credentials=True, # Cho phép gửi cookies, headers xác thực (hữu ích nếu API yêu cầu đăng nhập).
+    allow_methods=["*"],  # Cho phép tất cả phương thức HTTP (GET, POST, PUT, DELETE...)
+    allow_headers=["*"], # Cho phép tất cả các headers được gửi trong request
 )
 
 # Cấu hình đường dẫn
@@ -38,7 +54,7 @@ os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(ATTENDANCE_DIR, exist_ok=True)
 
 # Khởi tạo mô hình nhận diện khuôn mặt
-face_analyzer = FaceAnalysis(name='buffalo_l', providers=['DmlExecutionProvider'])
+face_analyzer = FaceAnalysis(name='buffalo_l', providers=['CUDAExecutionProvider'])
 face_analyzer.prepare(ctx_id=0, det_size=(640, 640))
 
 # Từ điển lưu thời gian điểm danh gần nhất của mỗi người
@@ -57,9 +73,6 @@ class AttendanceRecord(BaseModel):
     user_id: str
     time: str
     event: str
-
-# if os.path.exists(DB_PATH):
-#     os.remove(DB_PATH)
 
 # Thiết lập cơ sở dữ liệu
 def setup_database():
@@ -88,9 +101,6 @@ def setup_database():
     
     conn.commit()
     conn.close()
-
-# Gọi setup_database khi ứng dụng khởi động
-setup_database()
 
 # Load face database từ SQLite
 def load_face_database():
@@ -169,9 +179,6 @@ def can_record_attendance(user_id):
     last_attendance_time[user_id] = current_time
     return True
 
-# Load dữ liệu khuôn mặt khi khởi động
-face_database = load_face_database()
-
 # API endpoints
 @app.post("/register_face")
 async def register_face(
@@ -180,7 +187,7 @@ async def register_face(
 ):
     """Đăng ký khuôn mặt và tạo người dùng mới với nhiều ảnh"""
     if not face_images:
-        return JSONResponse(status_code=400, content={"error": "No images uploaded"})
+        return JSONResponse(status_code=400, content={"error": "Không có ảnh nào được chọn"})
     
     # Tạo ID duy nhất cho người dùng
     user_id = str(uuid.uuid4())
@@ -218,7 +225,7 @@ async def register_face(
                 continue
             
             if len(faces) > 1:
-                continue  # Skip images with multiple faces
+                continue  # Bỏ qua những bức ảnh có nhiều hơn 1 khuôn mặt
             
             # Lưu ảnh
             image_filename = f"{uuid.uuid4()}.jpg"
@@ -236,7 +243,7 @@ async def register_face(
         # Nếu không có ảnh nào hợp lệ, rollback và trả về lỗi
         if not saved_images:
             conn.rollback()
-            return JSONResponse(status_code=400, content={"error": "No valid face images found"})
+            return JSONResponse(status_code=400, content={"error": "Không có ảnh hợp lệ"})
         
         conn.commit()
         
@@ -245,7 +252,7 @@ async def register_face(
         face_database = load_face_database()
         
         return {
-            "message": "User registered successfully", 
+            "message": "Đăng ký thành công", 
             "user_id": user_id,
             "name": name,
             "image_count": len(saved_images)
@@ -253,20 +260,18 @@ async def register_face(
         
     except Exception as e:
         conn.rollback()
-        return JSONResponse(status_code=500, content={"error": f"Registration failed: {str(e)}"})
+        return JSONResponse(status_code=500, content={"error": f"Đăng ký thất bại: {str(e)}"})
     finally:
         conn.close()
 
 @app.get("/users")
 async def get_users():
     """Lấy danh sách tất cả người dùng"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name FROM users")
+        users = [{"id": row[0], "name": row[1]} for row in cursor.fetchall()]
     
-    cursor.execute("SELECT id, name FROM users")
-    users = [{"id": row[0], "name": row[1]} for row in cursor.fetchall()]
-    
-    conn.close()
     return {"users": users}
 
 @app.get("/user/{user_id}/faces")
@@ -311,7 +316,6 @@ async def get_today_attendance():
     today = datetime.now().strftime("%Y-%m-%d")
     return await get_attendance(today)
 
-# Xử lý frame để nhận diện khuôn mặt
 # Xử lý frame để nhận diện khuôn mặt
 def process_frame(frame):
     # Copy frame để vẽ lên
@@ -383,14 +387,43 @@ def process_frame(frame):
                         0.6, color, 2)
     
     except Exception as e:
-        print(f"Error in face recognition: {e}")
+        print(f"Lỗi nhận diện: {e}")
     
     return display_frame, recognized_users
+
+class CameraManager:
+    _instance = None
+    _camera = None
+    _lock = threading.Lock()
+    
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = cls()
+        return cls._instance
+    
+    def __init__(self):
+        if CameraManager._instance is not None:
+            raise Exception("Singleton class - sử dụng get_instance()")
+        self._camera = None
+    
+    def get_camera(self):
+        if self._camera is None:
+            self._camera = cv2.VideoCapture(0)
+        return self._camera
+    
+    def release_camera(self):
+        if self._camera is not None:
+            self._camera.release()
+            self._camera = None
 
 # Generator để stream video
 def generate_frames():
     # Khởi tạo camera
-    cap = cv2.VideoCapture(0)
+    camera_manager = CameraManager.get_instance()
+    cap = camera_manager.get_camera()
     
     try:
         while True:
@@ -409,8 +442,8 @@ def generate_frames():
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
             
-            # Giảm tốc độ frame
-            time.sleep(0.05)
+            # # Giảm tốc độ frame
+            # time.sleep(0.05)
     
     finally:
         cap.release()
@@ -423,13 +456,6 @@ async def video_feed():
         generate_frames(),
         media_type="multipart/x-mixed-replace; boundary=frame"
     )
-
-@app.on_event("startup")
-async def startup_event():
-    """Tải face database khi khởi động ứng dụng"""
-    global face_database
-    face_database = load_face_database()
-    print(f"Loaded {len(face_database)} users into face database")
 
 @app.get("/")
 async def root():
