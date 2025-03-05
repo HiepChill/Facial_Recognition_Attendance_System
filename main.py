@@ -185,7 +185,7 @@ def can_record_attendance(user_id):
 # API endpoints
 @app.post("/register_face")
 async def register_face(
-    user_id: str = Form(...),  # Changed to required parameter
+    user_id: str = Form(...),  
     name: str = Form(...),
     face_images: List[UploadFile] = File(...)
 ):
@@ -193,18 +193,18 @@ async def register_face(
     if not face_images:
         return JSONResponse(status_code=400, content={"error": "Không có ảnh nào được chọn"})
     
-    # Connect to database to check for existing user_id
+    # Kết nối database để kiểm tra id
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
     try:
-        # Check if user_id already exists
+        # Kiểm tra id đã tồn tại hay chưa
         cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
         if cursor.fetchone():
             conn.close()
             return JSONResponse(
                 status_code=400, 
-                content={"error": f"User ID '{user_id}' already exists. Please use a different ID."}
+                content={"error": f"ID người dùng '{user_id}' đã tồn tại. Vui lòng lựa chọn ID khác."}
             )
         
         # Thêm người dùng mới
