@@ -72,7 +72,7 @@ scikit-learn==1.2.2
 1. **Clone hoặc tải dự án**:
 
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/HiepChill/Facial_Recognition_Attendance_System.git
     cd face_recognition_system
 
     ```
@@ -116,10 +116,10 @@ Cách sử dụng
          -F "face_images=@/path/to/face2.jpg"
     -   Phản hồi:
         {
-        "message": "Đăng ký thành công",
-        "user_id": "johndoe123",
-        "name": "John Doe",
-        "image_count": 2
+            "message": "Đăng ký thành công",
+            "user_id": "johndoe123",
+            "name": "John Doe",
+            "image_count": 2
         }
 
 3. Xem danh sách người dùng:
@@ -127,10 +127,10 @@ Cách sử dụng
     - Endpoint: /users (GET)
     - Phản hồi:
       {
-      "users": [
-      {"id": "johndoe123", "name": "John Doe"},
-      {"id": "janesmith456", "name": "Jane Smith"}
-      ]
+          "users": [
+              {"id": "johndoe123", "name": "John Doe"},
+              {"id": "janesmith456", "name": "Jane Smith"}
+          ]
       }
 
 4. Xem lịch sử điểm danh
@@ -141,8 +141,8 @@ Cách sử dụng
     {
     "date": "2025-03-05",
     "records": [
-    {"name": "John Doe", "user_id": "johndoe123", "time": "08:00:00", "event": "check-in"},
-    {"name": "John Doe", "user_id": "johndoe123", "time": "12:00:00", "event": "check-out"}
+        {"name": "John Doe", "user_id": "johndoe123", "time": "08:00:00", "event": "check-in"},
+        {"name": "John Doe", "user_id": "johndoe123", "time": "12:00:00", "event": "check-out"}
     ]
     }
 -   Endpoint: /today_attendance (GET) để xem điểm danh hôm nay.
