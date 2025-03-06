@@ -28,6 +28,7 @@ Hệ thống phù hợp cho các ứng dụng như quản lý điểm danh nhân
 
 ## Cấu trúc thư mục
 
+'''
 face_recognition_system/
 ├── app/
 │ ├── init.py # Định nghĩa module và import
@@ -44,6 +45,7 @@ face_recognition_system/
 ├── attendance.db # Cơ sở dữ liệu SQLite
 ├── run.py # File chạy ứng dụng (không cần thiết nếu dùng main.py)
 └── README.md # Tài liệu hướng dẫn (file này)
+'''
 
 ---
 
@@ -116,10 +118,10 @@ Cách sử dụng
          -F "face_images=@/path/to/face2.jpg"
     -   Phản hồi:
         {
-            "message": "Đăng ký thành công",
-            "user_id": "johndoe123",
-            "name": "John Doe",
-            "image_count": 2
+        "message": "Đăng ký thành công",
+        "user_id": "johndoe123",
+        "name": "John Doe",
+        "image_count": 2
         }
 
 3. Xem danh sách người dùng:
@@ -127,10 +129,10 @@ Cách sử dụng
     - Endpoint: /users (GET)
     - Phản hồi:
       {
-          "users": [
-              {"id": "johndoe123", "name": "John Doe"},
-              {"id": "janesmith456", "name": "Jane Smith"}
-          ]
+      "users": [
+      {"id": "johndoe123", "name": "John Doe"},
+      {"id": "janesmith456", "name": "Jane Smith"}
+      ]
       }
 
 4. Xem lịch sử điểm danh
@@ -141,8 +143,8 @@ Cách sử dụng
     {
     "date": "2025-03-05",
     "records": [
-        {"name": "John Doe", "user_id": "johndoe123", "time": "08:00:00", "event": "check-in"},
-        {"name": "John Doe", "user_id": "johndoe123", "time": "12:00:00", "event": "check-out"}
+    {"name": "John Doe", "user_id": "johndoe123", "time": "08:00:00", "event": "check-in"},
+    {"name": "John Doe", "user_id": "johndoe123", "time": "12:00:00", "event": "check-out"}
     ]
     }
 -   Endpoint: /today_attendance (GET) để xem điểm danh hôm nay.
