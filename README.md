@@ -84,17 +84,17 @@ scikit-learn==1.2.2
 
 2. Tạo môi trường ảo (khuyến nghị):
 
-```
-   python -m venv venv
-   source venv/bin/activate # Linux/macOS
-   venv\Scripts\activate # Windows
-```
+    ```
+    python -m venv venv
+    source venv/bin/activate # Linux/macOS
+    venv\Scripts\activate # Windows
+    ```
 
 3. Cài đặt các thư viện:
 
-```
-   pip install -r requirements.txt
-```
+    ```
+    pip install -r requirements.txt
+    ```
 
 4. (Tùy chọn) Cài đặt CUDA nếu muốn dùng GPU:
    Cài đặt CUDA Toolkit và cuDNN nếu bạn muốn sử dụng CUDAExecutionProvider.
@@ -120,46 +120,46 @@ Cách sử dụng
     -   Phương thức: POST
     -   Body:
 
-    ```
+        ```
         user_id (Form): ID duy nhất của người dùng (text).
         name (Form): Tên người dùng (text).
         face_images (File): Danh sách file ảnh khuôn mặt (upload nhiều file).
-    ```
+        ```
 
     -   Ví dụ (dùng curl):
 
-    ```
+        ```
         curl -X POST "http://127.0.0.1:8080/register_face" \
          -F "user_id=johndoe123" \
          -F "name=John Doe" \
          -F "face_images=@/path/to/face1.jpg" \
          -F "face_images=@/path/to/face2.jpg"
-    ```
+        ```
 
     -   Phản hồi:
 
-    ```
+        ```
         {
             "message": "Đăng ký thành công",
             "user_id": "johndoe123",
             "name": "John Doe",
             "image_count": 2
         }
-    ```
+        ```
 
 3. Xem danh sách người dùng:
 
     - Endpoint: /users (GET)
     - Phản hồi:
 
-    ```
-      {
-        "users": [
-            {"id": "johndoe123", "name": "John Doe"},
-            {"id": "janesmith456", "name": "Jane Smith"}
-        ]
-      }
-    ```
+        ```
+        {
+            "users": [
+                {"id": "johndoe123", "name": "John Doe"},
+                {"id": "janesmith456", "name": "Jane Smith"}
+            ]
+        }
+        ```
 
 4. Xem lịch sử điểm danh
 
