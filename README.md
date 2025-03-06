@@ -106,9 +106,9 @@ Cách sử dụng
 
 -   Chạy file main.py để khởi động server FastAPI:
 
-```
+    ```
     python main.py
-```
+    ```
 
     -   Server sẽ chạy tại http://127.0.0.1:8080.
     -   Truy cập http://127.0.0.1:8080/docs để xem tài liệu API tự động từ FastAPI (Swagger UI).
