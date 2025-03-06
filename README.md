@@ -28,8 +28,8 @@ Hệ thống phù hợp cho các ứng dụng như quản lý điểm danh nhân
 
 ## Cấu trúc thư mục
 
-'''
-face_recognition_system/
+```
+📂face_recognition_system/
 ├── app/
 │ ├── init.py # Định nghĩa module và import
 │ ├── attendance.py # Logic xử lý điểm danh (lưu và lấy dữ liệu điểm danh)
@@ -45,7 +45,7 @@ face_recognition_system/
 ├── attendance.db # Cơ sở dữ liệu SQLite
 ├── run.py # File chạy ứng dụng (không cần thiết nếu dùng main.py)
 └── README.md # Tài liệu hướng dẫn (file này)
-'''
+```
 
 ---
 
