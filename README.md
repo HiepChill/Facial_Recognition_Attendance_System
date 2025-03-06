@@ -60,12 +60,15 @@ Hệ thống phù hợp cho các ứng dụng như quản lý điểm danh nhân
 ### Thư viện Python
 
 Danh sách các thư viện cần thiết được liệt kê trong file `requirements.txt` (tạo file này nếu chưa có):
+
+```
 fastapi==0.95.1
 uvicorn==0.21.1
 opencv-python==4.7.0
 numpy==1.24.3
 insightface[onnxruntime-gpu]==0.7.3 # Hỗ trợ GPU nếu có
 scikit-learn==1.2.2
+```
 
 ---
 
@@ -80,12 +83,18 @@ scikit-learn==1.2.2
     ```
 
 2. Tạo môi trường ảo (khuyến nghị):
+
+```
    python -m venv venv
    source venv/bin/activate # Linux/macOS
    venv\Scripts\activate # Windows
+```
 
 3. Cài đặt các thư viện:
+
+```
    pip install -r requirements.txt
+```
 
 4. (Tùy chọn) Cài đặt CUDA nếu muốn dùng GPU:
    Cài đặt CUDA Toolkit và cuDNN nếu bạn muốn sử dụng CUDAExecutionProvider.
@@ -96,7 +105,10 @@ Cách sử dụng
 1. Chạy ứng dụng
 
 -   Chạy file main.py để khởi động server FastAPI:
+
+```
     python main.py
+```
 
     -   Server sẽ chạy tại http://127.0.0.1:8080.
     -   Truy cập http://127.0.0.1:8080/docs để xem tài liệu API tự động từ FastAPI (Swagger UI).
@@ -107,46 +119,62 @@ Cách sử dụng
 
     -   Phương thức: POST
     -   Body:
+
+    ```
         user_id (Form): ID duy nhất của người dùng (text).
         name (Form): Tên người dùng (text).
         face_images (File): Danh sách file ảnh khuôn mặt (upload nhiều file).
+    ```
+
     -   Ví dụ (dùng curl):
+
+    ```
         curl -X POST "http://127.0.0.1:8080/register_face" \
          -F "user_id=johndoe123" \
          -F "name=John Doe" \
          -F "face_images=@/path/to/face1.jpg" \
          -F "face_images=@/path/to/face2.jpg"
+    ```
+
     -   Phản hồi:
+
+    ```
         {
-        "message": "Đăng ký thành công",
-        "user_id": "johndoe123",
-        "name": "John Doe",
-        "image_count": 2
+            "message": "Đăng ký thành công",
+            "user_id": "johndoe123",
+            "name": "John Doe",
+            "image_count": 2
         }
+    ```
 
 3. Xem danh sách người dùng:
 
     - Endpoint: /users (GET)
     - Phản hồi:
+
+    ```
       {
-      "users": [
-      {"id": "johndoe123", "name": "John Doe"},
-      {"id": "janesmith456", "name": "Jane Smith"}
-      ]
+        "users": [
+            {"id": "johndoe123", "name": "John Doe"},
+            {"id": "janesmith456", "name": "Jane Smith"}
+        ]
       }
+    ```
 
 4. Xem lịch sử điểm danh
 
 -   Endpoint: /attendance/{date} (GET, date có định dạng YYYY-MM-DD)
 -   Ví dụ: /attendance/2025-03-05
 -   Phản hồi:
+    ```
     {
-    "date": "2025-03-05",
-    "records": [
-    {"name": "John Doe", "user_id": "johndoe123", "time": "08:00:00", "event": "check-in"},
-    {"name": "John Doe", "user_id": "johndoe123", "time": "12:00:00", "event": "check-out"}
-    ]
+        "date": "2025-03-05",
+        "records": [
+            {"name": "John Doe", "user_id": "johndoe123", "time": "08:00:00", "event": "check-in"},
+            {"name": "John Doe", "user_id": "johndoe123", "time": "12:00:00", "event": "check-out"}
+        ]
     }
+    ```
 -   Endpoint: /today_attendance (GET) để xem điểm danh hôm nay.
 
 5. Stream video nhận diện khuôn mặt
