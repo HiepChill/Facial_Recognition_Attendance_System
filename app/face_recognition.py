@@ -3,6 +3,9 @@ import numpy as np
 import os
 from insightface.app import FaceAnalysis
 from sklearn.metrics.pairwise import cosine_similarity
+from .config import FACE_RECOGNITION_THRESHOLD
+from .database import get_last_attendance_status, update_attendance_status
+from .attendance import can_record_attendance, log_attendance
 from datetime import datetime
 
 # Danh sách provider theo thứ tự ưu tiên
