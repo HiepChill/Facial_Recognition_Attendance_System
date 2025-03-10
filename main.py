@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
     print("Ứng dụng đang tắt: Đã giải phóng tài nguyên camera")
 
 # Thêm CORS middleware: giúp kiểm soát quyền truy cập tài nguyên giữa các trang web có nguồn gốc khác nhau
-app = FastAPI(title="Face Recognition Attendance System", lifespan=lifespan)
+app = FastAPI(title="Face Recognition Attendance System", lifespan=lifespan, description="API cho hệ thống điểm danh sử dụng nhận diện khuôn mặt. Cung cấp các chức năng đăng ký khuôn mặt, xem danh sách người dùng, và tra cứu dữ liệu điểm danh.")
 
 # Thêm CORS middleware
 app.add_middleware(
@@ -44,11 +44,16 @@ app.add_middleware(
     allow_headers=["*"], # Cho phép tất cả các headers được gửi trong request
 )
 # API endpoints
-@app.post("/register_face")
+@app.post("/register_face", 
+    summary="Đăng ký khuôn mặt người dùng mới",
+    description="API này nhận ID, tên người dùng và các ảnh khuôn mặt để đăng ký người dùng mới vào hệ thống. Các ảnh sẽ được xử lý để trích xuất đặc trưng khuôn mặt.",
+    response_description="Thông tin người dùng đã được đăng ký và số lượng ảnh hợp lệ"
+)
+
 async def register_face(
-    user_id: str = Form(...),  
-    name: str = Form(...),
-    face_images: List[UploadFile] = File(...)
+    user_id: str = Form(..., description="Mã định danh của người dùng"),  
+    name: str = Form(..., description="Họ tên của người dùng"),
+    face_images: List[UploadFile] = File(..., description="Danh sách các ảnh khuôn mặt của người dùng")
 ):
     """Đăng ký khuôn mặt và tạo người dùng mới với nhiều ảnh"""
     if not face_images:
@@ -123,31 +128,46 @@ async def register_face(
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": f"Đăng ký thất bại: {str(e)}"})
 
-@app.get("/users")
+@app.get("/users",
+    summary="Lấy danh sách người dùng",
+    description="Trả về danh sách tất cả người dùng đã đăng ký trong hệ thống.",
+    response_description="Danh sách các người dùng với ID và tên"
+)
 async def get_users():
     """Lấy danh sách tất cả người dùng"""
     users = get_all_users()
     return {"users": users}
 
-@app.get("/user/{user_id}/faces")
+@app.get("/user/{user_id}/faces",
+    summary="Lấy ảnh khuôn mặt của người dùng",
+    description="Trả về danh sách đường dẫn đến các ảnh khuôn mặt của người dùng được chỉ định bởi user_id.",
+    response_description="Danh sách đường dẫn đến các ảnh khuôn mặt"
+)
 async def get_user_faces(user_id: str):
     """Lấy danh sách ảnh khuôn mặt của người dùng"""
     face_images = get_user_face_images(user_id)
     return {"user_id": user_id, "face_images": face_images}
 
-@app.get("/attendance/{date}")
+@app.get("/attendance/{date}",
+    summary="Lấy dữ liệu điểm danh theo ngày",
+    description="Trả về dữ liệu điểm danh của tất cả người dùng trong ngày được chỉ định, định dạng YYYY-MM-DD.",
+    response_description="Danh sách bản ghi điểm danh trong ngày chỉ định"
+)
 async def get_attendance(date: str):
     """Lấy dữ liệu điểm danh theo ngày (định dạng: YYYY-MM-DD)"""
     records = get_attendance_records(date)
     return {"date": date, "records": records}
 
-@app.get("/today_attendance")
+@app.get("/today_attendance",
+    summary="Lấy dữ liệu điểm danh hôm nay",
+    description="Trả về dữ liệu điểm danh của tất cả người dùng trong ngày hiện tại.",
+    response_description="Danh sách bản ghi điểm danh trong ngày hiện tại"
+)
 async def get_today_attendance():
     """Lấy dữ liệu điểm danh của ngày hôm nay"""
     records = get_attendance_records()
     today = datetime.now().strftime("%Y-%m-%d")
     return {"date": today, "records": records}
-
 
 # Generator để stream video
 def generate_frames():
@@ -176,7 +196,17 @@ def generate_frames():
         print(f"Lỗi stream: {e}")
 
 # Stream video với nhận diện khuôn mặt
-@app.get("/video_feed")
+@app.get("/video_feed",
+    summary="Stream video có tích hợp nhận diện khuôn mặt",
+    description="Cung cấp luồng video từ camera có tích hợp nhận diện khuôn mặt và điểm danh tự động. Stream có thể được hiển thị trên giao diện web.",
+    response_description="Luồng video JPEG được phân đoạn",
+    responses={
+        200: {
+            "content": {"multipart/x-mixed-replace": {}},
+            "description": "Luồng video từ camera"
+        }
+    }
+)
 async def video_feed():
     """Stream video với nhận diện khuôn mặt"""
     return StreamingResponse(
@@ -184,7 +214,11 @@ async def video_feed():
         media_type="multipart/x-mixed-replace; boundary=frame"
     )
 
-@app.get("/")
+@app.get("/",
+    summary="API gốc",
+    description="Endpoint kiểm tra để xác nhận API đang hoạt động.",
+    response_description="Thông báo xác nhận hệ thống đang hoạt động"
+)
 async def root():
     return {"message": "Face Recognition Attendance System"}
 
