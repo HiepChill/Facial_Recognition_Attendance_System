@@ -134,7 +134,8 @@ def draw_recognition_result(frame, left, top, right, bottom, match_info, similar
         
         # Kiểm tra và ghi nhận điểm danh
         if can_record_attendance(user_id):
-            event_type = determine_event_type(user_id)
+            # event_type = determine_event_type(user_id)
+            event_type = "check"
             log_attendance(name, user_id, event_type)
             recognized_users.append({
                 "user_id": user_id,
@@ -156,10 +157,10 @@ def draw_recognition_result(frame, left, top, right, bottom, match_info, similar
     cv2.putText(frame, label, (left, y_position),
                cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
-# Xác định loại sự kiện (check-in hoặc check-out)
-def determine_event_type(user_id):
-    """Xác định loại sự kiện (check-in hoặc check-out)"""
-    last_status = get_last_attendance_status(user_id)
-    if last_status and last_status[0] == "check-in":
-        return "check-out"
-    return "check-in"
+# # Xác định loại sự kiện (check-in hoặc check-out)
+# def determine_event_type(user_id):
+#     """Xác định loại sự kiện (check-in hoặc check-out)"""
+#     last_status = get_last_attendance_status(user_id)
+#     if last_status and last_status[0] == "check-in":
+#         return "check-out"
+#     return "check-in"
