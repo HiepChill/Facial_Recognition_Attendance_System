@@ -214,6 +214,61 @@ async def video_feed():
         media_type="multipart/x-mixed-replace; boundary=frame"
     )
 
+
+# Thêm vào file chính (ví dụ: main.py hoặc app/main.py)
+
+# Generator để stream video từ RTSP
+def generate_rtsp_frames(rtsp_url):
+    """Generator để stream video từ RTSP"""
+    camera_manager = CameraManager.get_instance()
+    cap = camera_manager.get_camera(rtsp_url=rtsp_url)
+    
+    try:
+        while True:
+            success, frame = cap.read()
+            if not success:
+                print("Không thể đọc frame từ RTSP")
+                break
+            
+            # Xử lý frame cho nhận diện
+            processed_frame, _ = process_frame(frame, face_database)
+            
+            # Chuyển đổi frame thành JPEG
+            _, buffer = cv2.imencode('.jpg', processed_frame)
+            frame_bytes = buffer.tobytes()
+            
+            # Yield frame cho streaming
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+    
+    except Exception as e:
+        print(f"Lỗi stream RTSP: {e}")
+    finally:
+        camera_manager.release_camera()
+
+# Endpoint mới cho RTSP
+@app.get("/rtsp_feed",
+    summary="Stream video từ RTSP với nhận diện khuôn mặt",
+    description="Cung cấp luồng video từ camera RTSP (URL được chỉ định) với nhận diện khuôn mặt và điểm danh tự động.",
+    response_description="Luồng video JPEG được phân đoạn",
+    responses={
+        200: {
+            "content": {"multipart/x-mixed-replace": {}},
+            "description": "Luồng video từ RTSP"
+        }
+    }
+)
+async def rtsp_feed(rtsp_url: str):
+    """Stream video từ RTSP với nhận diện khuôn mặt"""
+    if not rtsp_url:
+        return JSONResponse(status_code=400, content={"error": "Vui lòng cung cấp RTSP URL"})
+    
+    return StreamingResponse(
+        generate_rtsp_frames(rtsp_url),
+        media_type="multipart/x-mixed-replace; boundary=frame"
+    )
+
+
 @app.get("/",
     summary="API gốc",
     description="Endpoint kiểm tra để xác nhận API đang hoạt động.",
