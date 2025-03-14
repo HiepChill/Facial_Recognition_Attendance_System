@@ -4,3 +4,4 @@ opencv-python
 numpy
 insightface
 scikit-learn
+onnxruntime
