@@ -7,12 +7,15 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 import os
 import numpy as np
+import threading
+import time
 
 from app.config import DATASET_DIR
 from app.database import setup_database, check_user_exists, add_user, add_face_image, get_all_users, get_user_face_images, get_user_face_data
-from app.face_recognition import face_analyzer, face_database, load_face_database, process_frame
+from app.face_recognition import face_analyzer, face_database, load_face_database
 from app.camera import CameraManager
 from app.attendance import get_attendance_records
+from app.video_service import get_video_service
 
 # Tạo context manager để tải face database khi khởi động ứng dụng
 @asynccontextmanager
@@ -24,6 +27,17 @@ async def lifespan(app: FastAPI):
     face_database = load_face_database(user_face_data)
     print(f"Đã tải {len(face_database)} người dùng vào CSDL")
     
+    # Tạo thread để dọn dẹp các stream không hoạt động
+    def cleanup_idle_streams():
+        video_service = get_video_service()
+        while True:
+            time.sleep(30)  # Kiểm tra mỗi 30 giây
+            video_service.cleanup_idle_streams()
+    
+    cleanup_thread = threading.Thread(target=cleanup_idle_streams)
+    cleanup_thread.daemon = True
+    cleanup_thread.start()
+    
     yield  # Ứng dụng hoạt động
 
     # Giải phóng tài nguyên camera khi ứng dụng đóng
@@ -31,18 +45,18 @@ async def lifespan(app: FastAPI):
     camera_manager.release_camera()
     print("Ứng dụng đang tắt: Đã giải phóng tài nguyên camera")
 
-# Thêm CORS middleware: giúp kiểm soát quyền truy cập tài nguyên giữa các trang web có nguồn gốc khác nhau
+# Khởi tạo ứng dụng FastAPI
 app = FastAPI(title="Face Recognition Attendance System", lifespan=lifespan, description="API cho hệ thống điểm danh sử dụng nhận diện khuôn mặt. Cung cấp các chức năng đăng ký khuôn mặt, xem danh sách người dùng, và tra cứu dữ liệu điểm danh.")
 
 # Thêm CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Cho phép tất cả các nguồn (domain) truy cập API
-        # allow_origins=["https://my-frontend.com", "https://admin.my-frontend.com"] # Chỉ cho phép các domain này truy cập API
-    allow_credentials=True, # Cho phép gửi cookies, headers xác thực (hữu ích nếu API yêu cầu đăng nhập).
-    allow_methods=["*"], # Cho phép tất cả phương thức HTTP (GET, POST, PUT, DELETE...)
-    allow_headers=["*"], # Cho phép tất cả các headers được gửi trong request
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"],
 )
+
 # API endpoints
 @app.post("/register_face", 
     summary="Đăng ký khuôn mặt người dùng mới",
@@ -54,6 +68,7 @@ async def register_face(
     user_id: str = Form(..., description="Mã định danh của người dùng"),  
     name: str = Form(..., description="Họ tên của người dùng"),
     face_images: List[UploadFile] = File(..., description="Danh sách các ảnh khuôn mặt của người dùng")
+
 ):
     """Đăng ký khuôn mặt và tạo người dùng mới với nhiều ảnh"""
     if not face_images:
@@ -169,32 +184,6 @@ async def get_today_attendance():
     today = datetime.now().strftime("%Y-%m-%d")
     return {"date": today, "records": records}
 
-# Generator để stream video
-def generate_frames():
-    """Generator để stream video"""
-    camera_manager = CameraManager.get_instance()
-    cap = camera_manager.get_camera()
-    
-    try:
-        while True:
-            success, frame = cap.read()
-            if not success:
-                break
-            
-            # Xử lý frame cho nhận diện
-            processed_frame, _ = process_frame(frame, face_database)
-            
-            # Chuyển đổi frame thành JPEG
-            _, buffer = cv2.imencode('.jpg', processed_frame)
-            frame_bytes = buffer.tobytes()
-            
-            # Yield frame cho streaming
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-    
-    except Exception as e:
-        print(f"Lỗi stream: {e}")
-
 # Stream video với nhận diện khuôn mặt
 @app.get("/video_feed",
     summary="Stream video có tích hợp nhận diện khuôn mặt",
@@ -209,42 +198,11 @@ def generate_frames():
 )
 async def video_feed():
     """Stream video với nhận diện khuôn mặt"""
+    video_service = get_video_service()
     return StreamingResponse(
-        generate_frames(),
+        video_service.generate_frames(face_database),
         media_type="multipart/x-mixed-replace; boundary=frame"
     )
-
-
-# Thêm vào file chính (ví dụ: main.py hoặc app/main.py)
-
-# Generator để stream video từ RTSP
-def generate_rtsp_frames(rtsp_url):
-    """Generator để stream video từ RTSP"""
-    camera_manager = CameraManager.get_instance()
-    cap = camera_manager.get_camera(rtsp_url=rtsp_url)
-    
-    try:
-        while True:
-            success, frame = cap.read()
-            if not success:
-                print("Không thể đọc frame từ RTSP")
-                break
-            
-            # Xử lý frame cho nhận diện
-            processed_frame, _ = process_frame(frame, face_database)
-            
-            # Chuyển đổi frame thành JPEG
-            _, buffer = cv2.imencode('.jpg', processed_frame)
-            frame_bytes = buffer.tobytes()
-            
-            # Yield frame cho streaming
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-    
-    except Exception as e:
-        print(f"Lỗi stream RTSP: {e}")
-    finally:
-        camera_manager.release_camera()
 
 # Endpoint mới cho RTSP
 @app.get("/rtsp_feed",
@@ -263,11 +221,11 @@ async def rtsp_feed(rtsp_url: str):
     if not rtsp_url:
         return JSONResponse(status_code=400, content={"error": "Vui lòng cung cấp RTSP URL"})
     
+    video_service = get_video_service()
     return StreamingResponse(
-        generate_rtsp_frames(rtsp_url),
+        video_service.generate_rtsp_frames(rtsp_url, face_database),
         media_type="multipart/x-mixed-replace; boundary=frame"
     )
-    
 
 @app.get("/",
     summary="API gốc",
@@ -279,5 +237,5 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8080)
+    uvicorn.run(app, host="0.0.0.0", port=8080)
 

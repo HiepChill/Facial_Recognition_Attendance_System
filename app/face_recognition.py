@@ -10,9 +10,9 @@ from datetime import datetime
 
 # Danh sách provider theo thứ tự ưu tiên
 PROVIDER_LIST = [
+    'CUDAExecutionProvider',  # Ưu tiên GPU NVIDIA nếu có
     'DmlExecutionProvider',   # DirectML cho Windows
     'CPUExecutionProvider'    # Fallback cuối cùng cho CPU
-    'CUDAExecutionProvider',  # Ưu tiên GPU NVIDIA nếu có
 ]
 
 # Hàm khởi tạo FaceAnalysis với fallback
